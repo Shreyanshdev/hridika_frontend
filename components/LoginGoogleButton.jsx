@@ -18,11 +18,7 @@ export default function LoginGoogleButton({ onSuccess, text = "signin_with" }) {
         try {
             const { credential } = credentialResponse;
             const user = await loginWithGoogle(credential);
-            if (user.role === "admin") {
-                router.push("/admin");
-            } else {
-                router.push("/products-dashboard");
-            }
+            window.location.href = user.role === "admin" ? "/admin" : "/products-dashboard";
         } catch (error) {
             console.error("Google Login Failed", error);
         }

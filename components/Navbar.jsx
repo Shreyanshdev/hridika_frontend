@@ -9,7 +9,7 @@ import {
   ShoppingBag,
   User,
   Facebook,
-  Twitter,
+  MessageCircle,
   Instagram,
   Phone,
   LogOut,
@@ -131,7 +131,10 @@ export default function Navbar() {
             <div className="flex items-center gap-8">
               <div className={`hidden md:flex items-center gap-5 border-r pr-8 ${isTransparent ? "border-white/20" : "border-zinc-200"}`}>
                 <Link href="#" className={`${hoverTextColor} transition-all hover:scale-110`}><Facebook size={12} /></Link>
-                <Link href="#" className={`${hoverTextColor} transition-all hover:scale-110`}><Twitter size={12} /></Link>
+                <Link href="https://wa.me/919876543210" className={`flex items-center gap-1 ${hoverTextColor} transition-all hover:scale-105`}>
+                  <MessageCircle size={12} />
+                  <span>+91 98765 43210</span>
+                </Link>
                 <Link href="#" className={`${hoverTextColor} transition-all hover:scale-110`}><Instagram size={12} /></Link>
               </div>
 
@@ -314,7 +317,10 @@ export default function Navbar() {
           <div className="flex items-center gap-5 pt-4 border-t border-zinc-100">
             <span className="text-[9px] uppercase tracking-[0.2em] text-zinc-300 mr-2">Follow</span>
             <Link href="#" className="text-zinc-400 hover:text-[#A68042] transition-colors"><Facebook size={16} /></Link>
-            <Link href="#" className="text-zinc-400 hover:text-[#A68042] transition-colors"><Twitter size={16} /></Link>
+            <Link href="https://wa.me/919876543210" className="flex items-center gap-1 text-zinc-400 hover:text-[#A68042] transition-colors">
+              <MessageCircle size={16} />
+              <span className="text-[10px]">+91 98765 43210</span>
+            </Link>
             <Link href="#" className="text-zinc-400 hover:text-[#A68042] transition-colors"><Instagram size={16} /></Link>
           </div>
 

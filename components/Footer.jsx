@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Facebook, Twitter, Instagram, Phone, Mail, MapPin, ChevronRight } from "lucide-react";
+import { Facebook, MessageCircle, Instagram, Phone, Mail, MapPin, ChevronRight } from "lucide-react";
 
 export default function Footer() {
   const quickLinks = [
@@ -45,8 +45,9 @@ export default function Footer() {
               <Link href="#" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#A68042] hover:border-[#A68042] transition-all duration-300 group">
                 <Facebook size={16} className="text-zinc-400 group-hover:text-white" />
               </Link>
-              <Link href="#" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#A68042] hover:border-[#A68042] transition-all duration-300 group">
-                <Twitter size={16} className="text-zinc-400 group-hover:text-white" />
+              <Link href="https://wa.me/919876543210" title="WhatsApp Us" className="h-10 px-4 rounded-full border border-white/10 flex items-center justify-center gap-2 hover:bg-[#A68042] hover:border-[#A68042] transition-all duration-300 group">
+                <MessageCircle size={16} className="text-zinc-400 group-hover:text-white" />
+                <span className="text-[12px] text-zinc-400 group-hover:text-white font-medium tracking-wide">+91 98765 43210</span>
               </Link>
               <Link href="#" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#A68042] hover:border-[#A68042] transition-all duration-300 group">
                 <Instagram size={16} className="text-zinc-400 group-hover:text-white" />

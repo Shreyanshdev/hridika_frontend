@@ -1,14 +1,4 @@
 "use client";
-/**
- * GOOGLE REDIRECT URI CONFIGURATION:
- * Ensure your Google Cloud Console Credentials > OAuth 2.0 Client IDs
- * has the following "Authorized JavaScript origins":
- * 1. http://localhost:3000
- * 2. http://localhost
- * 
- * No specific "Redirect URI" is needed for the GSIV2 popup flow, 
- * but Origins must match exactly.
- */
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";

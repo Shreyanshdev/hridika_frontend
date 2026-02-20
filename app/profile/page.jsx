@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
+import { getFullProfile, updateProfile as updateProfileApi } from "../../lib/api";
+import api from "../../lib/api";
 import {
   User,
   ShoppingBag,
@@ -17,14 +19,35 @@ import {
   Star,
   ShieldCheck,
   Clock,
-  X
+  X,
+  Pencil,
+  Mail,
+  Phone,
+  Check,
+  Loader2
 } from "lucide-react";
 import Footer from "../../components/Footer";
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
-  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+  const { user, logout, updateUser } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const router = useRouter();
+
+  // Edit Profile State
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState("");
+  const [profileData, setProfileData] = useState({ username: "", email: "", phone: "" });
+  const [originalData, setOriginalData] = useState({ username: "", email: "", phone: "" });
+
+  // OTP verification state
+  const [emailOtpStep, setEmailOtpStep] = useState("idle"); // idle | sent | verified
+  const [phoneOtpStep, setPhoneOtpStep] = useState("idle"); // idle | sent | verified
+  const [emailOtp, setEmailOtp] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneSessionToken, setPhoneSessionToken] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -36,14 +59,186 @@ export default function ProfilePage() {
     router.push("/login");
   };
 
-  React.useEffect(() => {
-    if (showLogoutModal) {
+  const openEditModal = async () => {
+    setEditError("");
+    setEditSuccess("");
+    setEmailOtpStep("idle");
+    setPhoneOtpStep("idle");
+    setEmailOtp("");
+    setPhoneOtp("");
+    setPhoneSessionToken("");
+
+    try {
+      setEditLoading(true);
+      const res = await getFullProfile();
+      const data = res.data;
+      const p = {
+        username: data.username || "",
+        email: data.email || "",
+        phone: data.phone || ""
+      };
+      setProfileData(p);
+      setOriginalData(p);
+      setShowEditModal(true);
+    } catch (err) {
+      setEditError("Failed to load profile data");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const emailChanged = profileData.email !== originalData.email;
+  const phoneChanged = profileData.phone !== originalData.phone;
+
+  // Send Email OTP
+  const handleSendEmailOtp = async () => {
+    if (!profileData.email || !emailChanged) return;
+    setOtpLoading(true);
+    setEditError("");
+    try {
+      await api.post("/auth/request-email-otp", { email: profileData.email, context: "update" });
+      setEmailOtpStep("sent");
+    } catch (err) {
+      setEditError(err.response?.data?.message || err.response?.data?.error || "Failed to send email OTP");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // Verify Email OTP
+  const handleVerifyEmailOtp = async () => {
+    if (!emailOtp) return;
+    setOtpLoading(true);
+    setEditError("");
+    try {
+      await api.post("/auth/verify-email-otp", { email: profileData.email, otp: emailOtp });
+      setEmailOtpStep("verified");
+    } catch (err) {
+      const msg = err.response?.data?.msg;
+      if (msg === "expired") setEditError("Email OTP expired. Please request a new one.");
+      else if (msg === "invalid") setEditError("Invalid OTP. Please try again.");
+      else setEditError("Email OTP verification failed");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // Send Phone OTP
+  const handleSendPhoneOtp = async () => {
+    if (!profileData.phone || !phoneChanged) return;
+    if (profileData.phone.length !== 10) {
+      setEditError("Enter a valid 10-digit phone number");
+      return;
+    }
+    setOtpLoading(true);
+    setEditError("");
+    try {
+      const res = await api.post("/auth/request-phone-otp", { phone: profileData.phone });
+      setPhoneSessionToken(res.data.sessionToken);
+      setPhoneOtpStep("sent");
+    } catch (err) {
+      setEditError(err.response?.data?.error || "Failed to send phone OTP");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // Verify Phone OTP
+  const handleVerifyPhoneOtp = async () => {
+    if (!phoneOtp) return;
+    setOtpLoading(true);
+    setEditError("");
+    try {
+      await api.post("/auth/verify-phone-otp", { phone: profileData.phone, otp: phoneOtp, sessionToken: phoneSessionToken });
+      setPhoneOtpStep("verified");
+    } catch (err) {
+      const msg = err.response?.data?.msg;
+      if (msg === "expired") setEditError("Phone OTP expired. Please request a new one.");
+      else if (msg === "invalid") setEditError("Invalid OTP. Please try again.");
+      else setEditError("Phone OTP verification failed");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // Save Profile
+  const handleSaveProfile = async () => {
+    setEditError("");
+    setEditSuccess("");
+
+    // Validate: if email changed, must be verified
+    if (emailChanged && emailOtpStep !== "verified") {
+      setEditError("Please verify your new email address before saving.");
+      return;
+    }
+    // Validate: if phone changed, must be verified
+    if (phoneChanged && phoneOtpStep !== "verified") {
+      setEditError("Please verify your new phone number before saving.");
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      const payload = {};
+      if (profileData.username !== originalData.username) payload.username = profileData.username;
+      if (emailChanged) payload.email = profileData.email;
+      if (phoneChanged) payload.phone = profileData.phone;
+
+      if (Object.keys(payload).length === 0) {
+        setEditError("No changes to save.");
+        setEditLoading(false);
+        return;
+      }
+
+      const res = await updateProfileApi(payload);
+      const updatedUser = res.data.user;
+
+      // Update local auth state
+      updateUser({
+        username: updatedUser.username,
+        email: updatedUser.email,
+        phone: updatedUser.phone
+      });
+
+      setEditSuccess("Profile updated successfully!");
+      setOriginalData({
+        username: updatedUser.username,
+        email: updatedUser.email,
+        phone: updatedUser.phone || ""
+      });
+
+      // Reset OTP steps
+      setEmailOtpStep("idle");
+      setPhoneOtpStep("idle");
+      setEmailOtp("");
+      setPhoneOtp("");
+
+      // Close after short delay
+      setTimeout(() => {
+        setShowEditModal(false);
+        setEditSuccess("");
+      }, 1500);
+    } catch (err) {
+      setEditError(err.response?.data?.error || "Failed to update profile");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // Can user save? All required verifications done
+  const canSave =
+    profileData.username &&
+    (!emailChanged || emailOtpStep === "verified") &&
+    (!phoneChanged || phoneOtpStep === "verified");
+
+  useEffect(() => {
+    if (showLogoutModal || showEditModal) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
     }
     return () => { document.body.style.overflow = ""; };
-  }, [showLogoutModal]);
+  }, [showLogoutModal, showEditModal]);
 
   if (!user) {
     if (typeof window !== "undefined") {
@@ -127,7 +322,11 @@ export default function ProfilePage() {
             </div>
 
             <div className="lg:ml-auto flex gap-4">
-              <button className="bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 text-white text-[10px] uppercase tracking-widest font-bold transition-all">
+              <button
+                onClick={openEditModal}
+                className="bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 text-white text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2"
+              >
+                <Pencil size={14} />
                 Edit Profile
               </button>
               <button
@@ -194,6 +393,217 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div
+            className="absolute inset-0 bg-zinc-950/40 backdrop-blur-md transition-all duration-500"
+            onClick={() => setShowEditModal(false)}
+          />
+          <div className="relative bg-white w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-500 overflow-hidden max-h-[90vh] overflow-y-auto">
+            {/* Top accent line */}
+            <div className="h-1.5 w-full bg-[#A68042]" />
+
+            <div className="p-8 sm:p-10">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-heading uppercase tracking-widest text-zinc-900">
+                  Edit Profile
+                </h3>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-zinc-300 hover:text-zinc-900 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {editError && (
+                <div className="bg-red-50 border-l-2 border-red-500 p-4 mb-6 animate-in fade-in duration-300">
+                  <p className="text-red-800 text-xs font-medium uppercase tracking-widest">{editError}</p>
+                </div>
+              )}
+              {editSuccess && (
+                <div className="bg-green-50 border-l-2 border-green-500 p-4 mb-6 animate-in fade-in duration-300 flex items-center gap-2">
+                  <Check size={16} className="text-green-600" />
+                  <p className="text-green-800 text-xs font-medium uppercase tracking-widest">{editSuccess}</p>
+                </div>
+              )}
+
+              <div className="space-y-8">
+                {/* Username Field */}
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-600 font-black mb-2 block">
+                    <User size={12} className="inline mr-2" />Username
+                  </label>
+                  <input
+                    type="text"
+                    value={profileData.username}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, username: e.target.value }))}
+                    className="w-full border-b-2 border-zinc-100 focus:border-[#A68042] bg-transparent py-3 text-zinc-900 font-bold focus:outline-none transition-all"
+                    placeholder="Your name"
+                  />
+                </div>
+
+                {/* Email Field with OTP */}
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-600 font-black mb-2 block">
+                    <Mail size={12} className="inline mr-2" />Email Address
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="email"
+                      value={profileData.email}
+                      onChange={(e) => {
+                        setProfileData(prev => ({ ...prev, email: e.target.value }));
+                        setEmailOtpStep("idle");
+                        setEmailOtp("");
+                      }}
+                      className="flex-1 border-b-2 border-zinc-100 focus:border-[#A68042] bg-transparent py-3 text-zinc-900 font-bold focus:outline-none transition-all"
+                      placeholder="your@email.com"
+                    />
+                    {emailChanged && emailOtpStep === "idle" && (
+                      <button
+                        onClick={handleSendEmailOtp}
+                        disabled={otpLoading}
+                        className="text-[9px] uppercase tracking-widest font-bold bg-[#A68042] text-white px-4 py-2.5 hover:bg-[#8e6b36] transition-all disabled:opacity-50 flex-shrink-0"
+                      >
+                        {otpLoading ? "..." : "Verify"}
+                      </button>
+                    )}
+                    {emailOtpStep === "verified" && (
+                      <div className="flex items-center gap-1 text-green-600 flex-shrink-0">
+                        <Check size={16} />
+                        <span className="text-[9px] uppercase tracking-widest font-bold">Verified</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Email OTP Input */}
+                  {emailChanged && emailOtpStep === "sent" && (
+                    <div className="mt-4 p-4 bg-zinc-50 animate-in slide-in-from-top-2 duration-300">
+                      <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-3">OTP sent to {profileData.email}</p>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="text"
+                          value={emailOtp}
+                          onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ""))}
+                          maxLength="6"
+                          placeholder="Enter 6-digit OTP"
+                          className="flex-1 border-b-2 border-zinc-200 focus:border-[#A68042] bg-transparent py-2 text-center tracking-[0.5em] font-bold text-zinc-900 focus:outline-none transition-all"
+                        />
+                        <button
+                          onClick={handleVerifyEmailOtp}
+                          disabled={otpLoading || emailOtp.length < 6}
+                          className="text-[9px] uppercase tracking-widest font-bold bg-zinc-900 text-white px-4 py-2.5 hover:bg-[#A68042] transition-all disabled:opacity-50"
+                        >
+                          {otpLoading ? <Loader2 size={14} className="animate-spin" /> : "Confirm"}
+                        </button>
+                      </div>
+                      <button
+                        onClick={handleSendEmailOtp}
+                        disabled={otpLoading}
+                        className="mt-2 text-[9px] uppercase tracking-widest text-zinc-400 hover:text-zinc-700 font-bold transition-all"
+                      >
+                        Resend OTP
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Phone Field with OTP */}
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-600 font-black mb-2 block">
+                    <Phone size={12} className="inline mr-2" />Phone Number
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <span className="text-zinc-400 font-medium py-3">+91</span>
+                    <input
+                      type="tel"
+                      value={profileData.phone}
+                      onChange={(e) => {
+                        setProfileData(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, "") }));
+                        setPhoneOtpStep("idle");
+                        setPhoneOtp("");
+                      }}
+                      maxLength="10"
+                      className="flex-1 border-b-2 border-zinc-100 focus:border-[#A68042] bg-transparent py-3 text-zinc-900 font-bold tracking-widest focus:outline-none transition-all"
+                      placeholder="1234567890"
+                    />
+                    {phoneChanged && phoneOtpStep === "idle" && (
+                      <button
+                        onClick={handleSendPhoneOtp}
+                        disabled={otpLoading}
+                        className="text-[9px] uppercase tracking-widest font-bold bg-[#A68042] text-white px-4 py-2.5 hover:bg-[#8e6b36] transition-all disabled:opacity-50 flex-shrink-0"
+                      >
+                        {otpLoading ? "..." : "Verify"}
+                      </button>
+                    )}
+                    {phoneOtpStep === "verified" && (
+                      <div className="flex items-center gap-1 text-green-600 flex-shrink-0">
+                        <Check size={16} />
+                        <span className="text-[9px] uppercase tracking-widest font-bold">Verified</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Phone OTP Input */}
+                  {phoneChanged && phoneOtpStep === "sent" && (
+                    <div className="mt-4 p-4 bg-zinc-50 animate-in slide-in-from-top-2 duration-300">
+                      <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-3">OTP sent to +91 {profileData.phone} via SMS</p>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="text"
+                          value={phoneOtp}
+                          onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
+                          maxLength="4"
+                          placeholder="Enter 4-digit OTP"
+                          className="flex-1 border-b-2 border-zinc-200 focus:border-[#A68042] bg-transparent py-2 text-center tracking-[0.5em] font-bold text-zinc-900 focus:outline-none transition-all"
+                        />
+                        <button
+                          onClick={handleVerifyPhoneOtp}
+                          disabled={otpLoading || phoneOtp.length < 4}
+                          className="text-[9px] uppercase tracking-widest font-bold bg-zinc-900 text-white px-4 py-2.5 hover:bg-[#A68042] transition-all disabled:opacity-50"
+                        >
+                          {otpLoading ? <Loader2 size={14} className="animate-spin" /> : "Confirm"}
+                        </button>
+                      </div>
+                      <button
+                        onClick={handleSendPhoneOtp}
+                        disabled={otpLoading}
+                        className="mt-2 text-[9px] uppercase tracking-widest text-zinc-400 hover:text-zinc-700 font-bold transition-all"
+                      >
+                        Resend OTP
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div className="mt-10 flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 px-8 py-4 text-[10px] uppercase tracking-[0.3em] font-bold text-zinc-400 hover:text-zinc-900 transition-all border border-zinc-100 hover:border-zinc-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={!canSave || editLoading}
+                  className="flex-1 bg-zinc-900 text-white px-8 py-4 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#A68042] transition-all shadow-xl shadow-zinc-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {editLoading ? (
+                    <><Loader2 size={14} className="animate-spin" /> Saving...</>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (

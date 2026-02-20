@@ -102,6 +102,12 @@ export const AuthProvider = ({ children }) => {
         return api.post("/auth/verify-phone-otp", { phone, otp, sessionToken });
     };
 
+    const updateUser = (updatedUser) => {
+        const newUser = { ...user, ...updatedUser };
+        localStorage.setItem("user", JSON.stringify(newUser));
+        setUser(newUser);
+    };
+
     const logout = () => {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
@@ -110,7 +116,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, loginset, register, logout, loginWithGoogle, verifyWithGoogle, requestEmailVerify, confirmEmailVerify, requestPhoneVerify, confirmPhoneVerify }}>
+        <AuthContext.Provider value={{ user, loading, login, loginset, register, logout, updateUser, loginWithGoogle, verifyWithGoogle, requestEmailVerify, confirmEmailVerify, requestPhoneVerify, confirmPhoneVerify }}>
             {!loading && children}
         </AuthContext.Provider>
     );
