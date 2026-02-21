@@ -31,8 +31,28 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata = {
-  title: "Hridika",
-  description: "Bespoke Fashion and Lifestyle",
+  title: "Hridika Jewels | Best Jeweller in Kanpur, UP | Real & Beautiful Jewellery",
+  description: "Looking for the best jeweller in Kanpur, UP India? Welcome to Hridika Jewels! We make gorgeous and real jewellery for everyday and wedding. Shop rings, necklaces, bangles, and more right here in Kanpur.",
+  keywords: "best jeweller in kanpur, kanpur jewellers, top jewellery shop in kanpur UP india, real jewellery kanpur, beautiful rings, necklaces kanpur, bridal jewellery kanpur, hridika jewels kanpur, fashion jewellery india",
+  openGraph: {
+    title: "Hridika Jewels | Best Jeweller in Kanpur",
+    description: "Welcome to Hridika Jewels! The best jewellery shop in Kanpur, UP for modern and traditional designs.",
+    url: "https://www.hridika.in",
+    siteName: "Hridika Jewels",
+    locale: "en_IN",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 import { GoogleOAuthProvider } from "@react-oauth/google";

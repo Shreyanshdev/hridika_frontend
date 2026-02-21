@@ -20,11 +20,7 @@ const faqs = [
         answer:
             "Currently, we ship across India. International shipping is coming soon. Please contact our team for special international requests and we will do our best to accommodate.",
     },
-    {
-        question: "How Can I Return Or Exchange An Item?",
-        answer:
-            "We accept returns and exchanges within 7 days of delivery. Items must be in their original condition with all tags and packaging intact. Please contact our support team to initiate the process.",
-    },
+
     {
         question: "Is My Payment Information Secure?",
         answer:
@@ -71,8 +67,8 @@ export default function FAQSection() {
                                     <button
                                         onClick={() => toggleFAQ(index)}
                                         className={`w-full flex items-center gap-4 px-6 py-5 rounded-sm text-left transition-all duration-300 ${isOpen
-                                                ? "bg-white border border-[#A68042]/15 shadow-sm"
-                                                : "bg-[#D4AF6A]/15 hover:bg-[#D4AF6A]/25 border border-transparent"
+                                            ? "bg-white border border-[#A68042]/15 shadow-sm"
+                                            : "bg-[#D4AF6A]/15 hover:bg-[#D4AF6A]/25 border border-transparent"
                                             }`}
                                     >
                                         <HelpCircle
