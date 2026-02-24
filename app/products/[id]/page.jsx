@@ -11,18 +11,19 @@ import QuickViewModal from "../../../components/QuickViewModal";
 import { getProductById, addToCart, getProducts } from "../../../lib/api";
 import { useAuth } from "../../../context/AuthContext";
 import { useCart } from "../../../context/CartContext";
+import { useWishlist } from "../../../context/WishlistContext";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { user } = useAuth();
   const { refreshCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
-  const [addedStatus, setAddedStatus] = useState(null); // null, 'success', 'error'
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [addedStatus, setAddedStatus] = useState(null);
   const [quantity, setQuantity] = useState(10);
   const [activeTab, setActiveTab] = useState("description");
   const [selectedImage, setSelectedImage] = useState(0);
@@ -105,6 +106,17 @@ export default function ProductDetailPage() {
       setAddedStatus('error');
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const isWishlisted = product ? isInWishlist(product.id) : false;
+
+  const handleToggleWishlist = () => {
+    if (!product) return;
+    if (isWishlisted) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
     }
   };
 
@@ -250,6 +262,32 @@ export default function ProductDetailPage() {
               )}
             </div>
 
+            {/* Product Details Strip */}
+            <div className="flex flex-wrap gap-3 mb-10">
+              {product.metal_name && (
+                <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-100 px-4 py-2.5">
+                  <div className={`w-2 h-2 rounded-full ${product.metal_name?.toLowerCase() === 'gold' ? 'bg-[#A68042]' : 'bg-zinc-400'}`} />
+                  <span className="text-[10px] uppercase tracking-widest font-black text-zinc-800">{product.metal_name}</span>
+                </div>
+              )}
+              {product.weight && (
+                <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-100 px-4 py-2.5">
+                  <span className="text-[10px] uppercase tracking-widest font-black text-zinc-800">{product.weight}g</span>
+                </div>
+              )}
+              {product.category && (
+                <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-100 px-4 py-2.5">
+                  <span className="text-[10px] uppercase tracking-widest font-black text-zinc-800">{product.category}</span>
+                </div>
+              )}
+              {product.stock > 0 && (
+                <div className="flex items-center gap-2 bg-green-50 border border-green-100 px-4 py-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-green-700">In Stock</span>
+                </div>
+              )}
+            </div>
+
             <div className="prose prose-sm text-zinc-400 mb-12 leading-loose italic border-l-2 border-[#A68042]/20 pl-8">
               <p>{product.description || "Indulge in the timeless elegance of this meticulously crafted piece. Designed for those who appreciate the finer things in life, it combines classic sophistication with modern luxury."}</p>
             </div>
@@ -301,7 +339,7 @@ export default function ProductDetailPage() {
                   )}
                 </button>
                 <button
-                  onClick={() => setIsWishlisted(!isWishlisted)}
+                  onClick={handleToggleWishlist}
                   className={`p-4 border transition-all duration-300 flex items-center justify-center group ${isWishlisted ? "border-[#A68042] text-[#A68042]" : "border-zinc-200 hover:border-[#A68042]"
                     }`}
                 >

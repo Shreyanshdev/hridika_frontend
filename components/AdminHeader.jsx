@@ -8,6 +8,7 @@ import {
     ShieldCheck,
     LayoutDashboard,
     MessageSquare,
+    Home,
     User as UserIcon,
     AlertTriangle,
     X
@@ -27,6 +28,7 @@ export default function AdminHeader() {
     };
 
     const navItems = [
+        { name: "Home", href: "/", icon: Home },
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
         { name: "Bespoke", href: "/admin/bespoke", icon: MessageSquare },
     ];

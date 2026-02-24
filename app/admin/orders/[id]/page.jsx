@@ -140,8 +140,9 @@ export default function AdminOrderDetailPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <button onClick={() => window.print()} className="bg-white border border-zinc-200 p-4 hover:border-zinc-900 transition-all shadow-sm">
-                            <Printer size={18} strokeWidth={1.5} />
+                        <button onClick={() => window.print()} className="bg-white border border-zinc-200 px-5 py-4 hover:border-zinc-900 transition-all shadow-sm flex items-center gap-2 text-zinc-800">
+                            <Printer size={16} strokeWidth={1.5} />
+                            <span className="text-[10px] uppercase tracking-widest font-bold">Print</span>
                         </button>
                         <div className="bg-zinc-900 text-white px-8 py-4 flex items-center gap-4 text-[10px] uppercase tracking-[0.3em] font-bold shadow-xl">
                             <Clock size={14} className="text-[#A68042]" />

@@ -29,6 +29,16 @@ import AdminHeader from "@/components/AdminHeader";
 export default function AdminDashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
+
+  // Prevent browser back button from leaving admin dashboard
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
   const [activeTab, setActiveTab] = useState("products");
   const [stats, setStats] = useState({ products: 0, orders: 0, customers: 0, revenue: "₹0" });
   const [products, setProducts] = useState([]);
@@ -55,6 +65,7 @@ export default function AdminDashboardPage() {
     making_charge: "",
     price_per_gram: "",
     gst_val: "3",
+    other_charges: "",
     final_price: ""
   });
   const [toast, setToast] = useState(null);
@@ -112,7 +123,6 @@ export default function AdminDashboardPage() {
   // Price Calculations based on Original Logic
   useEffect(() => {
     if (!showModal || !metalRates) return;
-    if (isEditMode && form.price_per_gram) return;
 
     const metal = form.metal_name?.toLowerCase();
     let calculatedPrice = 0;
@@ -130,7 +140,7 @@ export default function AdminDashboardPage() {
     if (calculatedPrice) {
       setForm(prev => ({ ...prev, price_per_gram: calculatedPrice.toFixed(2) }));
     }
-  }, [showModal, form.metal_name, metalRates, isEditMode]);
+  }, [showModal, form.metal_name, metalRates]);
 
   useEffect(() => {
     const price = Number(form.price_per_gram);
@@ -143,9 +153,11 @@ export default function AdminDashboardPage() {
     const makingAmount = (baseFinal * Number(form.making_charge || 0)) / 100;
     const totalBeforeGst = baseFinal + makingAmount;
     const finalWithGst = (totalBeforeGst * (Number(form.gst_val || 0) + 100)) / 100;
+    const otherCharges = Number(form.other_charges || 0);
+    const grandTotal = finalWithGst + otherCharges;
 
-    setForm(prev => ({ ...prev, final_price: finalWithGst.toFixed(2) }));
-  }, [form.weight, form.making_charge, form.gst_val, form.price_per_gram]);
+    setForm(prev => ({ ...prev, final_price: grandTotal.toFixed(2) }));
+  }, [form.weight, form.making_charge, form.gst_val, form.price_per_gram, form.other_charges]);
 
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files);
@@ -179,7 +191,7 @@ export default function AdminDashboardPage() {
     }
 
     const method = isEditMode ? "PUT" : "POST";
-    const url = isEditMode ? `${API_BASE} /products/${editProductId} ` : `${API_BASE}/products`;
+    const url = isEditMode ? `${API_BASE}/products/${editProductId}` : `${API_BASE}/products`;
 
     try {
       // Build FormData for multipart upload
@@ -192,6 +204,7 @@ export default function AdminDashboardPage() {
       formData.append('metal_name', form.metal_name || 'Gold');
       formData.append('weight', form.weight || '0');
       formData.append('making_charge', form.making_charge || '0');
+      formData.append('other_charges', form.other_charges || '0');
 
       // Separate File objects (new uploads) from URL strings (existing Cloudinary images)
       const existingUrls = [];
@@ -231,17 +244,22 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
   const handleDeleteProduct = async (id) => {
-    if (!confirm("Confirm removal of this masterpiece from the archive?")) return;
     try {
       const res = await fetch(`${API_BASE}/products/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) fetchAllData();
+      if (res.ok) {
+        showToast("Product removed from the archive.", "success");
+        fetchAllData();
+      }
     } catch (err) {
-      console.error("Delete failed:", err);
+      showToast("Failed to remove product.", "error");
     }
+    setDeleteTarget(null);
   };
 
   const handleSaveRate = async () => {
@@ -292,7 +310,7 @@ export default function AdminDashboardPage() {
                 setIsEditMode(false);
                 setForm({
                   name: "", category: "Rings", description: "", stock: "", quantity: "", metal_name: "Gold", images: [],
-                  weight: "", making_charge: "", price_per_gram: "", gst_val: "3", final_price: ""
+                  weight: "", making_charge: "", price_per_gram: "", gst_val: "3", other_charges: "", final_price: ""
                 });
                 setShowModal(true);
               }}
@@ -394,15 +412,15 @@ export default function AdminDashboardPage() {
                           </div>
                           <div>
                             <h4 className="text-[11px] uppercase tracking-widest font-bold text-zinc-900 mb-1">{p.name}</h4>
-                            <p className="text-[9px] italic text-zinc-400 line-clamp-1">{p.description}</p>
+                            <p className="text-[9px] italic text-zinc-600 line-clamp-1">{p.description}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium">{p.category}</span>
+                        <span className="text-[10px] uppercase tracking-widest text-zinc-700 font-medium">{p.category}</span>
                       </td>
                       <td className="px-8 py-6">
-                        <span className="text-[11px] font-medium text-zinc-800">₹{p.price}</span>
+                        <span className="text-[11px] font-bold text-zinc-900">₹{p.price}</span>
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-3">
@@ -416,7 +434,13 @@ export default function AdminDashboardPage() {
                             onClick={() => {
                               setIsEditMode(true);
                               setEditProductId(p.id);
-                              setForm(p);
+                              setForm({
+                                ...p,
+                                gst_val: p.gst_val || "3",
+                                other_charges: p.other_charges || "",
+                                price_per_gram: "",
+                                final_price: ""
+                              });
                               setShowModal(true);
                             }}
                             className="text-zinc-300 hover:text-zinc-900 transition-colors"
@@ -424,7 +448,7 @@ export default function AdminDashboardPage() {
                             <Edit2 size={14} />
                           </button>
                           <button
-                            onClick={() => handleDeleteProduct(p.id)}
+                            onClick={() => setDeleteTarget(p.id)}
                             className="text-zinc-300 hover:text-red-500 transition-colors"
                           >
                             <Trash2 size={14} />
@@ -460,7 +484,7 @@ export default function AdminDashboardPage() {
                   {orders.map((o) => (
                     <tr key={o.id} className="border-b border-zinc-50 hover:bg-zinc-50 transition-colors">
                       <td className="px-8 py-6 text-[11px] font-mono text-zinc-400 uppercase">#{String(o.id).substring(0, 8)}</td>
-                      <td className="px-8 py-6 text-[10px] uppercase tracking-widest text-zinc-600 truncate max-w-[200px]">{o.address}</td>
+                      <td className="px-8 py-6 text-[10px] uppercase tracking-widest text-zinc-700 truncate max-w-[200px]">{o.address}</td>
                       <td className="px-8 py-6">
                         <span className={`text-[9px] uppercase tracking-widest font-black px-3 py-1.5 ${o.status === 'Delivered' ? 'bg-green-50 text-green-600' : 'bg-zinc-100 text-zinc-600'
                           }`}>
@@ -506,8 +530,8 @@ export default function AdminDashboardPage() {
                         <h4 className="text-[11px] uppercase tracking-widest font-bold text-zinc-900">{c.username}</h4>
                       </td>
                       <td className="px-8 py-6 space-y-1">
-                        <p className="text-[10px] font-medium text-zinc-500">{c.email}</p>
-                        <p className="text-[9px] text-zinc-400 italic">{c.phone}</p>
+                        <p className="text-[10px] font-medium text-zinc-700">{c.email}</p>
+                        <p className="text-[9px] text-zinc-600 italic">{c.phone}</p>
                       </td>
                       <td className="px-8 py-6 text-[10px] text-zinc-400">
                         {new Date(c.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -640,6 +664,10 @@ export default function AdminDashboardPage() {
                       <input value={form.making_charge} onChange={(e) => setForm({ ...form, making_charge: e.target.value })} className="w-full bg-transparent border-b border-zinc-300 py-2 text-sm focus:outline-none font-bold text-[#A68042]" />
                     </div>
                     <div className="space-y-2">
+                      <label className="text-[8px] uppercase tracking-[0.3em] font-black text-zinc-500">Other Charges (₹)</label>
+                      <input value={form.other_charges} onChange={(e) => setForm({ ...form, other_charges: e.target.value })} className="w-full bg-transparent border-b border-zinc-300 py-2 text-sm focus:outline-none font-bold text-zinc-900" placeholder="0" />
+                    </div>
+                    <div className="space-y-2">
                       <label className="text-[8px] uppercase tracking-[0.3em] font-black text-zinc-500">Statutory Tax (%)</label>
                       <input value={form.gst_val} onChange={(e) => setForm({ ...form, gst_val: e.target.value })} className="w-full bg-transparent border-b border-zinc-300 py-2 text-sm focus:outline-none font-bold text-zinc-900" />
                     </div>
@@ -704,6 +732,40 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md mx-4 p-8 shadow-2xl border border-zinc-100 animate-in zoom-in-95 duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-red-50 border border-red-100 flex items-center justify-center">
+                <Trash2 size={16} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-[12px] uppercase tracking-widest font-black text-zinc-900">Remove Product</h3>
+                <p className="text-[10px] text-zinc-400 italic mt-0.5">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
+              Are you sure you want to permanently remove this masterpiece from the archive?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-3 text-[10px] uppercase tracking-widest font-bold border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteProduct(deleteTarget)}
+                className="flex-1 py-3 text-[10px] uppercase tracking-widest font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"
+              >
+                Yes, Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-8 right-8 z-[200] animate-in slide-in-from-bottom-4 fade-in duration-300">

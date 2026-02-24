@@ -20,7 +20,8 @@ import {
   X,
   Clock,
   ChevronDown,
-  Mail
+  Mail,
+  Trash2
 } from "lucide-react";
 
 export default function AdminBespokePage() {
@@ -31,6 +32,13 @@ export default function AdminBespokePage() {
   const [selectedType, setSelectedType] = useState("All");
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL;
   const token = typeof window !== 'undefined' ? localStorage.getItem("access_token") : null;
@@ -403,7 +411,74 @@ export default function AdminBespokePage() {
                   WhatsApp
                 </a>
               </div>
+              <button
+                onClick={() => setDeleteTarget(selectedItem.id)}
+                className="w-full mt-4 flex items-center justify-center gap-3 border border-red-200 text-red-500 py-4 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-red-50 hover:border-red-400 transition-colors"
+              >
+                <Trash2 size={14} />
+                Resolve & Delete Request
+              </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md mx-4 p-8 shadow-2xl border border-zinc-100 animate-in zoom-in-95 duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-red-50 border border-red-100 flex items-center justify-center">
+                <Trash2 size={16} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-[12px] uppercase tracking-widest font-black text-zinc-900">Delete Request</h3>
+                <p className="text-[10px] text-zinc-400 italic mt-0.5">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
+              Are you sure you want to resolve and permanently delete this bespoke request?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-3 text-[10px] uppercase tracking-widest font-bold border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`${API_BASE}/api/bespoke-requests/${deleteTarget}`, {
+                      method: "DELETE",
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (res.ok) {
+                      showToast("Bespoke request resolved and deleted.", "success");
+                      setSelectedItem(null);
+                      fetchBespokeRequests();
+                    }
+                  } catch (err) {
+                    showToast("Failed to delete request.", "error");
+                  }
+                  setDeleteTarget(null);
+                }}
+                className="flex-1 py-3 text-[10px] uppercase tracking-widest font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-8 right-8 z-[200] animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className={`flex items-center gap-3 px-6 py-4 shadow-2xl border ${toast.type === "success" ? "bg-white border-green-200" : "bg-white border-red-200"}`}>
+            <div className={`w-2 h-2 rounded-full ${toast.type === "success" ? "bg-green-500" : "bg-red-500"}`} />
+            <p className="text-[11px] uppercase tracking-widest font-bold text-zinc-800">{toast.message}</p>
+            <button onClick={() => setToast(null)} className="ml-4 text-zinc-400 hover:text-zinc-900 transition-colors text-lg leading-none">&times;</button>
           </div>
         </div>
       )}

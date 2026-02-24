@@ -99,7 +99,7 @@ export default function OrderDetailPage() {
           </Link>
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 bg-white border border-zinc-200 hover:border-zinc-400 px-5 py-2.5 text-xs uppercase tracking-widest font-semibold transition-all rounded-md shadow-sm"
+            className="flex items-center gap-2 bg-white border border-zinc-200 hover:border-zinc-400 px-5 py-2.5 text-xs uppercase tracking-widest font-bold text-zinc-800 transition-all rounded-md shadow-sm"
           >
             <Printer size={14} />
             Print Invoice

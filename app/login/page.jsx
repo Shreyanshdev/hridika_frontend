@@ -62,14 +62,14 @@ export default function LoginPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-phone-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otp, sessionToken, phone })
+        body: JSON.stringify({ otp, sessionToken, phone, context: "login" })
       });
       const data = await res.json();
 
       if (!res.ok) {
         if (data.msg === "expired") setError("OTP expired. Please request a new one.");
         else if (data.msg === "invalid") setError("Invalid OTP. Please try again.");
-        else if (data.msg === "user_not_found") setError("No account found with this phone number.");
+        else if (data.msg === "user_not_found") setError("No account found with this phone number. Please register first.");
         else setError("OTP verification failed");
         return;
       }
