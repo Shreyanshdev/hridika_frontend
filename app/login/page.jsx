@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
-import { Mail, Phone, Lock, ChevronRight, ArrowRight } from "lucide-react";
+import { Mail, Phone, Lock, ChevronRight, ArrowRight, Eye, EyeOff } from "lucide-react";
 import LoginGoogleButton from "../../components/LoginGoogleButton";
 
 export default function LoginPage() {
@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionToken, setSessionToken] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const { login, loginset } = useAuth();
   const router = useRouter();
@@ -257,14 +258,21 @@ export default function LoginPage() {
                 </div>
                 <div className="flex items-center border-b-2 border-zinc-100 group-focus-within:border-[#A68042] transition-all pb-2">
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     className="flex-1 bg-transparent focus:outline-none text-zinc-900 font-bold"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
-                  <Lock size={18} className="text-zinc-400" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-zinc-400 hover:text-zinc-700 transition-colors p-1"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
               <button

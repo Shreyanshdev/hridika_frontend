@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
-import { User, Mail, Lock, Phone, ArrowRight, ChevronRight, ShieldCheck, Pencil, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { User, Mail, Lock, Phone, ArrowRight, ChevronRight, ShieldCheck, Pencil, CheckCircle2, AlertCircle, X, Eye, EyeOff } from "lucide-react";
 import LoginGoogleButton from "../../components/LoginGoogleButton";
 
 // ─── Toast Component ───────────────────────────────────────────
@@ -56,9 +56,13 @@ export default function RegisterPage() {
   const [phoneSessionToken, setPhoneSessionToken] = useState("");
   const [emailTimer, setEmailTimer] = useState(0);
   const [phoneTimer, setPhoneTimer] = useState(0);
+  const [emailOtpLoading, setEmailOtpLoading] = useState(false);
+  const [phoneOtpLoading, setPhoneOtpLoading] = useState(false);
 
   // Toast State
   const [toast, setToast] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const showToast = useCallback((message, type = "info") => {
     setToast({ message, type });
   }, []);
@@ -91,6 +95,7 @@ export default function RegisterPage() {
   const handleRequestEmailOtp = async () => {
     if (!formData.email) return setError("Please enter email first");
     setError("");
+    setEmailOtpLoading(true);
     try {
       await requestEmailVerify(formData.email);
       setShowEmailOtp(true);
@@ -104,6 +109,8 @@ export default function RegisterPage() {
         setError(err.response?.data?.message || "Failed to send Email OTP");
         showToast("Failed to send OTP", "error");
       }
+    } finally {
+      setEmailOtpLoading(false);
     }
   };
 
@@ -131,6 +138,7 @@ export default function RegisterPage() {
   const handleRequestPhoneOtp = async () => {
     if (!formData.phone) return setError("Please enter phone first");
     setError("");
+    setPhoneOtpLoading(true);
     try {
       const res = await requestPhoneVerify(formData.phone);
       if (res.data.sessionToken) setPhoneSessionToken(res.data.sessionToken);
@@ -140,6 +148,8 @@ export default function RegisterPage() {
     } catch (err) {
       setError(err.response?.data?.message || "Failed to send Phone OTP");
       showToast("Failed to send OTP", "error");
+    } finally {
+      setPhoneOtpLoading(false);
     }
   };
 
@@ -304,13 +314,13 @@ export default function RegisterPage() {
                     <button
                       type="button"
                       onClick={handleRequestEmailOtp}
-                      disabled={!formData.email || !/\S+@\S+\.\S+/.test(formData.email)}
+                      disabled={!formData.email || !/\S+@\S+\.\S+/.test(formData.email) || emailOtpLoading}
                       className={`px-4 py-2 text-[10px] uppercase font-bold tracking-wider transition-all duration-300 rounded-sm
-                        ${(!formData.email || !/\S+@\S+\.\S+/.test(formData.email))
+                        ${(!formData.email || !/\S+@\S+\.\S+/.test(formData.email) || emailOtpLoading)
                           ? "bg-zinc-100 text-zinc-400 cursor-not-allowed"
                           : "bg-zinc-900 text-white hover:bg-[#A68042] shadow-md transform hover:-translate-y-0.5"}`}
                     >
-                      Send OTP
+                      {emailOtpLoading ? "Sending..." : "Send OTP"}
                     </button>
                   )}
 
@@ -430,14 +440,14 @@ export default function RegisterPage() {
                     <button
                       type="button"
                       onClick={handleRequestPhoneOtp}
-                      disabled={formData.phone.length !== 10}
+                      disabled={formData.phone.length !== 10 || phoneOtpLoading}
                       className={`px-6 py-2 text-[10px] uppercase font-bold tracking-wider transition-all duration-300 rounded-sm shadow-sm
-                        ${formData.phone.length === 10
+                        ${formData.phone.length === 10 && !phoneOtpLoading
                           ? 'bg-zinc-900 text-white hover:bg-[#A68042] hover:shadow-md cursor-pointer'
                           : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
                         }`}
                     >
-                      Send OTP
+                      {phoneOtpLoading ? "Sending..." : "Send OTP"}
                     </button>
                   )}
 
@@ -503,7 +513,7 @@ export default function RegisterPage() {
                 <label className="text-[10px] uppercase tracking-widest text-zinc-600 font-black mb-2 block group-focus-within:text-[#A68042] transition-colors">Password</label>
                 <div className="flex items-center border-b-2 border-zinc-100 group-focus-within:border-[#A68042] transition-all pb-2">
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     placeholder="••••••••"
                     className="flex-1 bg-transparent focus:outline-none text-zinc-900 font-bold"
@@ -511,14 +521,21 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     required
                   />
-                  <Lock size={18} className="text-zinc-200" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-zinc-400 hover:text-zinc-700 transition-colors p-1"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
               <div className="group">
                 <label className="text-[10px] uppercase tracking-widest text-zinc-600 font-black mb-2 block group-focus-within:text-[#A68042] transition-colors">Confirm</label>
                 <div className="flex items-center border-b-2 border-zinc-100 group-focus-within:border-[#A68042] transition-all pb-2">
                   <input
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     name="confirmPassword"
                     placeholder="Re-enter"
                     className="flex-1 bg-transparent focus:outline-none text-zinc-900 font-bold"
@@ -526,7 +543,14 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     required
                   />
-                  <ShieldCheck size={18} className="text-zinc-200" />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="text-zinc-400 hover:text-zinc-700 transition-colors p-1"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
             </div>

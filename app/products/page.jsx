@@ -19,8 +19,8 @@ import QuickViewModal from "../../components/QuickViewModal";
 import Footer from "../../components/Footer";
 import { getProducts, getCategories } from "../../lib/api";
 
-const CATEGORIES = ["All", "Bangles", "Rings", "Earrings", "Bracelets", "Necklaces"];
-const METALS = ["All", "Gold", "Silver", "Platinum", "White Gold"];
+const CATEGORIES = ["All", "Bangles", "Bracelets", "Earrings", "Necklaces", "Rings"];
+const METALS = ["All", "Gold", "Silver"];
 const SORT_OPTIONS = [
   { label: "Newest First", value: "newest" },
   { label: "Price: Low to High", value: "price_asc" },

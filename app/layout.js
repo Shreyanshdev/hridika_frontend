@@ -37,7 +37,7 @@ export const metadata = {
   openGraph: {
     title: "Hridika Jewels | Best Jeweller in Kanpur",
     description: "Welcome to Hridika Jewels! The best jewellery shop in Kanpur, UP for modern and traditional designs.",
-    url: "https://www.hridika.in",
+    url: "https://hridika-jewels.onrender.com",
     siteName: "Hridika Jewels",
     locale: "en_IN",
     type: "website",

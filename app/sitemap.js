@@ -1,5 +1,5 @@
 export default function sitemap() {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.hridika.in';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://hridika-jewels.onrender.com';
 
     const routes = [
         '',

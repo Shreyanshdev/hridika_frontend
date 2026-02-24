@@ -21,18 +21,17 @@ import QuickViewModal from "../../components/QuickViewModal";
 import Footer from "../../components/Footer";
 import { getProductsDash, getCategories } from "../../lib/api";
 
+// Only show these 5 categories
+const VALID_CATEGORIES = ["bangles", "bracelets", "earrings", "necklaces", "rings"];
+
 // Map category names to images for display (same as home CategorySection)
 const CATEGORY_IMAGES = {
-  bangles: "/assets/pic2.jpg",
-  bracelets: "/assets/pic2.jpg",
-  earrings: "/assets/pic21.jpg",
+  bangles: "/assets/pic8.jpg",
+  bracelets: "/assets/pic3.jpg",
+  earrings: "/assets/pic9.jpg",
   necklaces: "/assets/pic1.jpg",
   necklace: "/assets/pic1.jpg",
-  rings: "/assets/pic22.jpg",
-  pendant: "/assets/pic17.jpg",
-  mala: "/assets/pic17.jpg",
-  brooches: "/assets/pic23.jpg",
-  buttons: "/assets/pic23.jpg",
+  rings: "/assets/pic6.jpg",
 };
 
 const DEFAULT_IMAGE = "/assets/pic4.jpg";
@@ -70,7 +69,10 @@ export default function ProductsDashboardPage() {
       try {
         const res = await getCategories();
         const data = res.data || [];
-        const formatted = data.map(name => ({
+        const filtered = data.filter(name =>
+          VALID_CATEGORIES.includes(name.toLowerCase())
+        );
+        const formatted = filtered.map(name => ({
           name,
           href: `/category/${name.toLowerCase()}`,
           image: CATEGORY_IMAGES[name.toLowerCase()] || DEFAULT_IMAGE,

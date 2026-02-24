@@ -19,6 +19,9 @@ import QuickViewModal from "../../../components/QuickViewModal";
 import Footer from "../../../components/Footer";
 import { getProductsByCategory, getCategories } from "../../../lib/api";
 
+const VALID_CATEGORIES = ["bangles", "bracelets", "earrings", "necklaces", "rings"];
+const METALS = ["All", "Gold", "Silver"];
+
 const SORT_OPTIONS = [
   { label: "Newest First", value: "newest" },
   { label: "Price: Low to High", value: "price_asc" },
@@ -27,26 +30,12 @@ const SORT_OPTIONS = [
 ];
 
 const CATEGORY_IMAGES = {
-  bangles:
-    "/assets/unsplash/jewel-necklace-1.jpg",
-  rings:
-    "/assets/unsplash/jewel-bracelet-1.jpg",
-  earrings:
-    "/assets/unsplash/jewel-earring-1.jpg",
-  necklaces:
-    "/assets/unsplash/jewel-ring-2.jpg",
-  necklace:
-    "/assets/unsplash/jewel-ring-2.jpg",
-  bracelets:
-    "/assets/unsplash/jewel-necklace-1.jpg",
-  pendant:
-    "/assets/unsplash/jewel-ring-2.jpg",
-  mala:
-    "/assets/unsplash/jewel-craft-1.jpg",
-  brooches:
-    "/assets/unsplash/jewel-earring-1.jpg",
-  buttons:
-    "/assets/unsplash/jewel-display-1.jpg",
+  bangles: "/assets/pic8.jpg",
+  bracelets: "/assets/pic3.jpg",
+  earrings: "/assets/pic9.jpg",
+  necklaces: "/assets/pic1.jpg",
+  necklace: "/assets/pic1.jpg",
+  rings: "/assets/pic6.jpg",
 };
 
 const CATEGORY_TAGLINES = {
@@ -140,11 +129,14 @@ export default function CategoryPage() {
         const res = await getCategories();
         const data = res.data || [];
         const formatted = data
-          .filter(name => name.toLowerCase() !== category.toLowerCase())
+          .filter(name =>
+            VALID_CATEGORIES.includes(name.toLowerCase()) &&
+            name.toLowerCase() !== category.toLowerCase()
+          )
           .map(name => ({
             name,
             href: `/category/${name.toLowerCase()}`,
-            image: `/assets/pic4.jpg`
+            image: CATEGORY_IMAGES[name.toLowerCase()] || `/assets/pic4.jpg`
           }));
         setOtherCategories(formatted);
       } catch {
@@ -405,7 +397,7 @@ export default function CategoryPage() {
                   <Sparkles size={12} className="text-[#A68042]" /> Noble Metal
                 </h4>
                 <div className="space-y-1">
-                  {["All", "Gold", "Silver", "Platinum", "White Gold"].map((metal) => (
+                  {METALS.map((metal) => (
                     <button
                       key={metal}
                       onClick={() => setSelectedMetal(metal)}
