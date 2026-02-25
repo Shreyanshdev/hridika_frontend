@@ -79,6 +79,8 @@ export default function CheckoutPage() {
   }, [user, router]);
 
   const totalPrice = cartItems.reduce((sum, item) => sum + (item.total_price || (item.price * item.quantity)), 0);
+  const outOfStockItems = cartItems.filter(item => (item.stock || 0) <= 0);
+  const hasStockIssue = outOfStockItems.length > 0;
 
   const handleOrder = async () => {
     if (!addressLine.trim() || !city.trim() || !stateVal.trim() || !pincode.trim()) {
@@ -334,11 +336,11 @@ export default function CheckoutPage() {
             <div className="pt-8 border-t border-zinc-100 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-400">
               <button
                 onClick={handleOrder}
-                disabled={loading || cartItems.length === 0}
+                disabled={loading || cartItems.length === 0 || hasStockIssue}
                 className="w-full bg-zinc-900 text-white py-6 uppercase tracking-[0.4em] text-[12px] font-bold hover:bg-[#A68042] transition-all duration-700 shadow-2xl shadow-zinc-200 disabled:opacity-50 group flex items-center justify-center gap-4 overflow-hidden relative"
               >
-                <span className="relative z-10">{loading ? "Authorizing Engagement..." : "Finalize Procurement"}</span>
-                <ChevronRight size={18} className="relative z-10 group-hover:translate-x-1 transition-transform" />
+                <span className="relative z-10">{loading ? "Authorizing Engagement..." : hasStockIssue ? "Remove Out-of-Stock Items to Proceed" : "Finalize Procurement"}</span>
+                {!hasStockIssue && <ChevronRight size={18} className="relative z-10 group-hover:translate-x-1 transition-transform" />}
                 <div className="absolute inset-0 bg-white/5 -translate-x-full group-hover:translate-x-0 transition-transform duration-700 ease-out" />
               </button>
 
@@ -379,6 +381,9 @@ export default function CheckoutPage() {
                       <h4 className="text-[10px] uppercase tracking-widest font-bold text-zinc-900 line-clamp-1">{item.name}</h4>
                       <p className="text-[9px] text-zinc-400 italic mb-2">Qty: {item.quantity} {item.size && `| Size: ${item.size}`}</p>
                       <p className="text-xs font-medium text-zinc-800">₹{(item.price * item.quantity).toLocaleString()}</p>
+                      {(item.stock || 0) <= 0 && (
+                        <p className="text-[9px] font-bold text-red-500 uppercase tracking-wider mt-1">Out of Stock — Remove to proceed</p>
+                      )}
                     </div>
                   </div>
                 ))}

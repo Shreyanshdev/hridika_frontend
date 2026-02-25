@@ -18,6 +18,7 @@ export default function QuickViewModal({ isOpen, onClose, product }) {
     const [quantity, setQuantity] = useState(10);
     const [isAdding, setIsAdding] = useState(false);
     const [addedStatus, setAddedStatus] = useState(null);
+    const [cartToast, setCartToast] = useState(null);
 
     if (!isOpen) return null;
 
@@ -39,7 +40,9 @@ export default function QuickViewModal({ isOpen, onClose, product }) {
         } catch (err) {
             console.error("Add to cart error:", err);
             setAddedStatus('error');
-            setTimeout(() => setAddedStatus(null), 3000);
+            const msg = err?.response?.data?.msg || "Could not add to cart. Please try again.";
+            setCartToast(msg);
+            setTimeout(() => { setCartToast(null); setAddedStatus(null); }, 4000);
         } finally {
             setIsAdding(false);
         }
@@ -60,6 +63,17 @@ export default function QuickViewModal({ isOpen, onClose, product }) {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Cart Toast */}
+            {cartToast && (
+                <div className="fixed top-6 right-6 z-[200] max-w-sm border-l-4 border-red-500 bg-red-50 px-5 py-4 shadow-2xl rounded-lg animate-in slide-in-from-right duration-300">
+                    <div className="flex items-start gap-3">
+                        <p className="text-sm font-medium text-red-800 flex-1">{cartToast}</p>
+                        <button onClick={() => setCartToast(null)} className="opacity-50 hover:opacity-100 text-red-400">
+                            <X size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
             {/* Overlay */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm shadow-inner"
@@ -133,8 +147,8 @@ export default function QuickViewModal({ isOpen, onClose, product }) {
                                 )}
                                 {product.making_charge && (
                                     <div>
-                                        <span className="text-[9px] uppercase tracking-widest text-zinc-400 block font-bold">Making Charge</span>
-                                        <span className="text-[12px] text-zinc-800 font-medium">₹{product.making_charge}</span>
+                                        <span className="text-[9px] uppercase tracking-widest text-zinc-400 block font-bold">Making Charge ({product.making_charge}%)</span>
+                                        <span className="text-[12px] text-zinc-800 font-medium">₹{(((product.price_per_gram || 0) * (product.weight || 0)) * (product.making_charge || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                                     </div>
                                 )}
                                 {product.material && (
@@ -146,14 +160,25 @@ export default function QuickViewModal({ isOpen, onClose, product }) {
                             </div>
                         )}
 
+                        {/* Stock Status */}
+                        <div className="mb-4">
+                            {(product.stock || 0) <= 0 ? (
+                                <span className="text-[10px] uppercase tracking-widest font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 inline-block">Out of Stock</span>
+                            ) : (product.stock || 0) <= 10 ? (
+                                <span className="text-[10px] uppercase tracking-widest font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 inline-block">Only {product.stock} Left</span>
+                            ) : (
+                                <span className="text-[10px] uppercase tracking-widest font-bold text-green-700 bg-green-50 border border-green-100 px-3 py-1.5 inline-block">In Stock</span>
+                            )}
+                        </div>
+
                         <div className="space-y-6">
                             <div>
                                 <label className="text-[11px] uppercase tracking-widest text-zinc-400 mb-2 block font-bold">Quantity <span className="text-[9px] text-[#A68042] normal-case tracking-normal">(Min. 10 pieces)</span></label>
                                 <div className="flex items-center border border-zinc-200 w-fit h-12">
                                     <button
                                         onClick={() => setQuantity(Math.max(10, quantity - 1))}
-                                        disabled={quantity <= 10}
-                                        className={`px-4 transition-colors ${quantity <= 10 ? 'text-zinc-200 cursor-not-allowed' : 'text-zinc-400 hover:text-black hover:bg-zinc-50'}`}
+                                        disabled={quantity <= 10 || (product.stock || 0) <= 0}
+                                        className={`px-4 transition-colors ${quantity <= 10 || (product.stock || 0) <= 0 ? 'text-zinc-200 cursor-not-allowed' : 'text-zinc-400 hover:text-black hover:bg-zinc-50'}`}
                                     >
                                         <Minus size={14} />
                                     </button>
@@ -164,8 +189,9 @@ export default function QuickViewModal({ isOpen, onClose, product }) {
                                         className="w-14 text-center focus:outline-none font-bold text-zinc-800 text-sm"
                                     />
                                     <button
-                                        onClick={() => setQuantity(quantity + 1)}
-                                        className="px-5 hover:bg-zinc-50 transition-colors text-zinc-400 hover:text-black"
+                                        onClick={() => setQuantity(Math.min(product.stock || quantity, quantity + 1))}
+                                        disabled={(product.stock || 0) <= 0 || quantity >= (product.stock || 0)}
+                                        className={`px-5 transition-colors ${(product.stock || 0) <= 0 || quantity >= (product.stock || 0) ? 'text-zinc-200 cursor-not-allowed' : 'text-zinc-400 hover:text-black hover:bg-zinc-50'}`}
                                     >
                                         <Plus size={14} />
                                     </button>
@@ -175,15 +201,19 @@ export default function QuickViewModal({ isOpen, onClose, product }) {
                             <div className="flex flex-col sm:flex-row gap-4 pt-4">
                                 <button
                                     onClick={handleAddToCart}
-                                    disabled={isAdding}
-                                    className={`flex-1 flex items-center justify-center gap-3 py-4 px-8 uppercase tracking-[0.2em] text-[12px] font-bold transition-all duration-300 border ${addedStatus === 'success'
-                                        ? "bg-green-600 border-green-600 text-white"
-                                        : addedStatus === 'error'
-                                            ? "bg-red-500 border-red-500 text-white"
-                                            : "bg-zinc-900 border-zinc-900 text-white hover:bg-[#A68042] hover:border-[#A68042]"
+                                    disabled={isAdding || (product.stock || 0) <= 0}
+                                    className={`flex-1 flex items-center justify-center gap-3 py-4 px-8 uppercase tracking-[0.2em] text-[12px] font-bold transition-all duration-300 border ${(product.stock || 0) <= 0
+                                        ? "bg-zinc-200 border-zinc-200 text-zinc-400 cursor-not-allowed"
+                                        : addedStatus === 'success'
+                                            ? "bg-green-600 border-green-600 text-white"
+                                            : addedStatus === 'error'
+                                                ? "bg-red-500 border-red-500 text-white"
+                                                : "bg-zinc-900 border-zinc-900 text-white hover:bg-[#A68042] hover:border-[#A68042]"
                                         } ${isAdding ? "opacity-70 cursor-not-allowed" : "shadow-xl shadow-zinc-200"}`}
                                 >
-                                    {isAdding ? (
+                                    {(product.stock || 0) <= 0 ? (
+                                        "Out of Stock"
+                                    ) : isAdding ? (
                                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                     ) : addedStatus === 'success' ? (
                                         "Added Successfully!"

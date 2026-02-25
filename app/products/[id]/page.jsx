@@ -25,6 +25,7 @@ export default function ProductDetailPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [addedStatus, setAddedStatus] = useState(null);
   const [quantity, setQuantity] = useState(10);
+  const [cartToast, setCartToast] = useState(null);
   const [activeTab, setActiveTab] = useState("description");
   const [selectedImage, setSelectedImage] = useState(0);
 
@@ -104,6 +105,9 @@ export default function ProductDetailPage() {
     } catch (err) {
       console.error("Add to cart error:", err);
       setAddedStatus('error');
+      const msg = err?.response?.data?.msg || "Could not add to cart. Please try again.";
+      setCartToast(msg);
+      setTimeout(() => { setCartToast(null); setAddedStatus(null); }, 4000);
     } finally {
       setIsAdding(false);
     }
@@ -195,6 +199,17 @@ export default function ProductDetailPage() {
 
   return (
     <main className="bg-white min-h-screen">
+      {/* Cart Toast */}
+      {cartToast && (
+        <div className="fixed top-6 right-6 z-[9999] max-w-sm border-l-4 border-red-500 bg-red-50 px-5 py-4 shadow-2xl rounded-lg animate-in slide-in-from-right duration-300">
+          <div className="flex items-start gap-3">
+            <p className="text-sm font-medium text-red-800 flex-1">{cartToast}</p>
+            <button onClick={() => setCartToast(null)} className="opacity-50 hover:opacity-100 text-red-400">
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
       {/* Sticky Breadcrumbs Section - Relative to Navbar */}
       <div
         className={`sticky z-40 bg-white/95 backdrop-blur-sm border-b border-zinc-100 transition-all duration-500 ease-in-out ${isScrolled ? "top-[64px] md:top-[72px]" : "top-[64px] md:top-[160px]"
@@ -280,10 +295,22 @@ export default function ProductDetailPage() {
                   <span className="text-[10px] uppercase tracking-widest font-black text-zinc-800">{product.category}</span>
                 </div>
               )}
-              {product.stock > 0 && (
-                <div className="flex items-center gap-2 bg-green-50 border border-green-100 px-4 py-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  <span className="text-[10px] uppercase tracking-widest font-bold text-green-700">In Stock</span>
+              {product.stock > 0 ? (
+                product.stock <= 10 ? (
+                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-4 py-2.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-amber-700">Only {product.stock} Left</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 bg-green-50 border border-green-100 px-4 py-2.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-green-700">In Stock</span>
+                  </div>
+                )
+              ) : (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-4 py-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-red-700">Out of Stock</span>
                 </div>
               )}
             </div>
@@ -331,8 +358,8 @@ export default function ProductDetailPage() {
                 <div className="flex items-center border border-zinc-200 w-fit h-12">
                   <button
                     onClick={() => setQuantity(Math.max(10, quantity - 1))}
-                    disabled={quantity <= 10}
-                    className="px-4 hover:bg-zinc-50 transition-colors text-zinc-400 hover:text-black"
+                    disabled={quantity <= 10 || (product.stock || 0) <= 0}
+                    className="px-4 hover:bg-zinc-50 transition-colors text-zinc-400 hover:text-black disabled:opacity-30"
                   >
                     <Minus size={14} />
                   </button>
@@ -343,8 +370,9 @@ export default function ProductDetailPage() {
                     className="w-12 text-center focus:outline-none font-bold text-zinc-800 text-sm"
                   />
                   <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-4 hover:bg-zinc-50 transition-colors text-zinc-400 hover:text-black"
+                    onClick={() => setQuantity(Math.min(product.stock || quantity, quantity + 1))}
+                    disabled={(product.stock || 0) <= 0 || quantity >= (product.stock || 0)}
+                    className="px-4 hover:bg-zinc-50 transition-colors text-zinc-400 hover:text-black disabled:opacity-30"
                   >
                     <Plus size={14} />
                   </button>
@@ -354,13 +382,17 @@ export default function ProductDetailPage() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={handleAddToCart}
-                  disabled={isAdding}
-                  className={`flex-1 flex items-center justify-center gap-3 py-4 px-8 uppercase tracking-[0.25em] text-[12px] font-bold transition-all duration-300 border ${addedStatus === 'success'
-                    ? "bg-green-600 border-green-600 text-white"
-                    : "bg-zinc-900 border-zinc-900 text-white hover:bg-[#A68042] hover:border-[#A68042]"
+                  disabled={isAdding || (product.stock || 0) <= 0}
+                  className={`flex-1 flex items-center justify-center gap-3 py-4 px-8 uppercase tracking-[0.25em] text-[12px] font-bold transition-all duration-300 border ${(product.stock || 0) <= 0
+                    ? "bg-zinc-200 border-zinc-200 text-zinc-400 cursor-not-allowed"
+                    : addedStatus === 'success'
+                      ? "bg-green-600 border-green-600 text-white"
+                      : "bg-zinc-900 border-zinc-900 text-white hover:bg-[#A68042] hover:border-[#A68042]"
                     } ${isAdding ? "opacity-70 cursor-not-allowed" : "shadow-lg shadow-zinc-100"}`}
                 >
-                  {isAdding ? (
+                  {(product.stock || 0) <= 0 ? (
+                    "Out of Stock"
+                  ) : isAdding ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   ) : addedStatus === 'success' ? (
                     "Added Successfully!"
