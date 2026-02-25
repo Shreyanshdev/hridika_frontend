@@ -12,6 +12,7 @@ import {
     Package,
     User,
     Mail,
+    Phone,
     MapPin,
     Calendar,
     ArrowRight,
@@ -166,7 +167,16 @@ export default function AdminOrderDetailPage() {
                                     <div key={idx} className="flex justify-between items-center group">
                                         <div className="flex items-center gap-8">
                                             <div className="w-16 h-20 bg-zinc-50 relative overflow-hidden">
-                                                <Image src={item.images || "/assets/unsplash/jewel-craft-1.jpg"} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                                                <Image src={(() => {
+                                                    const fallback = "/assets/unsplash/jewel-craft-1.jpg";
+                                                    try {
+                                                        if (!item.images) return fallback;
+                                                        const parsed = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
+                                                        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+                                                        if (typeof parsed === 'string' && parsed.trim()) return parsed;
+                                                        return fallback;
+                                                    } catch { return typeof item.images === 'string' && item.images.startsWith('http') ? item.images : fallback; }
+                                                })()} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
                                             </div>
                                             <div>
                                                 <h4 className="text-[12px] uppercase tracking-widest font-bold text-zinc-900 mb-1">{item.name}</h4>
@@ -245,6 +255,12 @@ export default function AdminOrderDetailPage() {
                                         <Mail size={14} className="text-[#A68042]" />
                                         <span className="text-[10px] tracking-widest truncate">{order.customer_email}</span>
                                     </div>
+                                    {order.customer_phone && (
+                                        <div className="flex items-center gap-4 text-zinc-300 hover:text-white transition-colors cursor-pointer">
+                                            <Phone size={14} className="text-[#A68042]" />
+                                            <span className="text-[10px] tracking-widest">{order.customer_phone}</span>
+                                        </div>
+                                    )}
                                     <div className="flex items-start gap-4 text-zinc-300">
                                         <MapPin size={14} className="text-[#A68042] mt-0.5" />
                                         <span className="text-[10px] leading-relaxed tracking-widest uppercase">{order.address}</span>

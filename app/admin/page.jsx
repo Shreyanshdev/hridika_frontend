@@ -531,7 +531,7 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="px-8 py-6 space-y-1">
                         <p className="text-[10px] font-medium text-zinc-700">{c.email}</p>
-                        <p className="text-[9px] text-zinc-600 italic">{c.phone}</p>
+                        <p className="text-[9px] text-zinc-600 italic">{c.Phone}</p>
                       </td>
                       <td className="px-8 py-6 text-[10px] text-zinc-400">
                         {new Date(c.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}

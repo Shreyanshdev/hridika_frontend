@@ -182,8 +182,13 @@ export default function OrderDetailPage() {
                         <Image
                           src={(() => {
                             const fallback = "https://placehold.co/100x100/f8f8f8/666?text=Item";
-                            if (typeof item.images === 'string' && item.images.trim()) return item.images;
-                            return fallback;
+                            try {
+                              if (!item.images) return fallback;
+                              const parsed = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
+                              if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+                              if (typeof parsed === 'string' && parsed.trim()) return parsed;
+                              return fallback;
+                            } catch { return typeof item.images === 'string' && item.images.startsWith('http') ? item.images : fallback; }
                           })()}
                           alt={item.name}
                           fill

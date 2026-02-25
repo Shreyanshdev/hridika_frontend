@@ -264,10 +264,10 @@ export default function ProfilePage() {
     },
     {
       icon: MapPin,
-      title: "Private Addresses",
-      description: "Manage your collection of delivery locations.",
-      link: "/profile/addresses",
-      label: "Configure"
+      title: "Contact Support",
+      description: "Reach out to our heritage concierge team.",
+      link: "/contact",
+      label: "Get in Touch"
     },
     {
       icon: Star,

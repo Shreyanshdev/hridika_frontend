@@ -16,6 +16,7 @@ import {
   Heart,
   Menu,
   X,
+  ShieldCheck,
 } from "lucide-react";
 import { useWishlist } from "../context/WishlistContext";
 import { useCart } from "../context/CartContext";
@@ -145,6 +146,12 @@ export default function Navbar() {
                       <User size={13} />
                       <span className="hidden sm:inline">My Account</span>
                     </Link>
+                    {user.role === 'admin' && (
+                      <Link href="/admin" title="Admin Dashboard" className={`flex items-center gap-1.5 ${hoverTextColor} transition-colors`}>
+                        <ShieldCheck size={13} className="text-[#A68042]" />
+                        <span className="hidden sm:inline">Admin</span>
+                      </Link>
+                    )}
                     <button onClick={handleLogoutClick} title="Logout" className={`flex items-center gap-1 ${hoverTextColor} transition-colors`}>
                       <LogOut size={13} />
                     </button>
@@ -286,6 +293,16 @@ export default function Navbar() {
                 <User size={16} strokeWidth={1.4} />
                 My Account
               </Link>
+              {user.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 text-[#A68042] hover:text-[#8B6A35] transition-colors text-[12px] uppercase tracking-[0.2em] font-semibold"
+                >
+                  <ShieldCheck size={16} strokeWidth={1.4} />
+                  Admin Dashboard
+                </Link>
+              )}
               <button
                 onClick={handleLogoutClick}
                 className="flex items-center gap-3 text-zinc-400 hover:text-red-500 transition-colors text-[12px] uppercase tracking-[0.2em]"

@@ -129,14 +129,29 @@ export default function CheckoutPage() {
         description: "Luxury Purchase Selection",
         prefill: {
           email: user?.email || "",
-          contact: user?.phone || "",
+          contact: user?.phone,
         },
-        method: {
-          upi: true,
-          card: true,
-          netbanking: true,
-          wallet: true,
-          paylater: true,
+        config: {
+          display: {
+            blocks: {
+              utib: {
+                name: "Pay using UPI",
+                instruments: [
+                  { method: "upi", flows: ["collect", "intent", "qr"] }
+                ]
+              },
+              other: {
+                name: "Other Methods",
+                instruments: [
+                  { method: "card" },
+                  { method: "netbanking" },
+                  { method: "wallet" }
+                ]
+              }
+            },
+            sequence: ["block.utib", "block.other"],
+            preferences: { show_default_blocks: true }
+          }
         },
         handler: async function (response) {
           try {

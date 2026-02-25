@@ -288,6 +288,39 @@ export default function ProductDetailPage() {
               )}
             </div>
 
+            {/* Price Breakdown */}
+            {product.price > 0 && (
+              <div className="mb-10 bg-zinc-50 border border-zinc-100 p-6">
+                <h3 className="text-[10px] uppercase tracking-widest font-black text-zinc-500 mb-4">Price Breakdown</h3>
+                <div className="space-y-2.5 text-[11px]">
+                  <div className="flex justify-between text-zinc-600">
+                    <span>Base ({product.metal_name || 'Metal'} × {product.weight}g)</span>
+                    <span className="font-medium text-zinc-800">₹{((product.price_per_gram || 0) * (product.weight || 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                  </div>
+                  {(product.making_charge > 0) && (
+                    <div className="flex justify-between text-zinc-600">
+                      <span>Making Charge ({product.making_charge}%)</span>
+                      <span className="font-medium text-zinc-800">₹{(((product.price_per_gram || 0) * (product.weight || 0)) * (product.making_charge || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-zinc-600">
+                    <span>GST (3%)</span>
+                    <span className="font-medium text-zinc-800">Inclusive</span>
+                  </div>
+                  {(product.other_charges > 0) && (
+                    <div className="flex justify-between text-zinc-600">
+                      <span>Other Charges</span>
+                      <span className="font-medium text-zinc-800">₹{parseFloat(product.other_charges).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-2.5 mt-2.5 border-t border-zinc-200 font-bold text-zinc-900">
+                    <span className="uppercase tracking-wider text-[10px]">Total per piece</span>
+                    <span>₹{product.price?.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="prose prose-sm text-zinc-400 mb-12 leading-loose italic border-l-2 border-[#A68042]/20 pl-8">
               <p>{product.description || "Indulge in the timeless elegance of this meticulously crafted piece. Designed for those who appreciate the finer things in life, it combines classic sophistication with modern luxury."}</p>
             </div>
